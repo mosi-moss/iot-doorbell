@@ -16,5 +16,8 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+RESOLUTION = (640, 480)
+FRAMERATE = None
+
 from doorbell.models import User
 from doorbell import routes

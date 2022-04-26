@@ -1,4 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
     <h1>Home</h1>
+    <p>{{ text|safe }}</p>
+    <img src="{{ url_for('camera_feed') }}">
 {% endblock content %}
