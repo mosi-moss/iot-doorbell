@@ -9,12 +9,29 @@ from doorbell.camera import Camera
 
 @app.route("/home")
 def home():
+   """
+   The home route. If the user is logged in: render `home.html`. If the user
+   is not logged in: redirect to `login`.
+   
+   Response:
+       render_template: `home.html`
+       redirect: `login`.
+   """
    if current_user.is_authenticated:
       return render_template("home.html", text = f"PiCamera at {RESOLUTION[0]}&#10799;{RESOLUTION[1]} / {FRAMERATE} FPS")
    else:
       return redirect(url_for("login"))
    
 def gen(camera):
+   """
+   Create a generator to get frames from the camera.
+
+   Args:
+       camera (Object): Camera object.
+
+   Yields:
+       generator: a generator that yeilds frames from the camera.
+   """
    while True:
       yield b"--frame\r\n"
       frame = camera.get_frame()
@@ -22,10 +39,24 @@ def gen(camera):
 
 @app.route("/camera_feed")
 def camera_feed():
-      return Response(gen(Camera()), mimetype = "multipart/x-mixed-replace; boundary=frame")
+   """
+   A route to access the camera feed.
+
+   Response:
+       bytes: a multipart byte response for camera frames.
+   """
+   return Response(gen(Camera()), mimetype = "multipart/x-mixed-replace; boundary=frame")
 
 @app.route("/login", methods = ["GET", "POST"])
 def login():
+   """
+   The login route. If the user is not logged in, render `login.html`. If the
+   user is logged in, redirect to `home`.
+
+   Response:
+       render_template: `login.html`.
+       redirect: `home`.
+   """
    form = LoginForm()
    errors = []
    if form.validate_on_submit():
@@ -41,5 +72,11 @@ def login():
 
 @app.route("/logout")
 def logout():
+   """
+   A route that logs out the user.
+
+   Response:
+       redirect: redirect to `home`.
+   """
    logout_user()
    return redirect(url_for("home"))

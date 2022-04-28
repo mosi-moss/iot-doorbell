@@ -7,15 +7,20 @@ from doorbell import FRAMERATE, RESOLUTION
 
 
 class CameraEvent(object):
-    """An Event-like class that signals all active clients when a new frame is
+    """
+    An Event-like class that signals all active clients when a new frame is
     available.
     """
-
     def __init__(self):
         self.events = {}
 
     def wait(self):
-        """Invoked from each client's thread to wait for the next frame."""
+        """
+        Invoked from each client's thread to wait for the next frame.
+
+        Returns:
+            self: `self.wait`.
+        """
         ident = get_ident()
         if ident not in self.events:
             # this is a new client
@@ -25,7 +30,13 @@ class CameraEvent(object):
         return self.events[ident][0].wait()
 
     def set(self):
-        """Invoked by the camera thread when a new frame is available."""
+        """
+        Invoked by the camera thread when a new frame is available.
+        
+        Returns:
+             None
+        """
+        
         now = time.time()
         remove = None
         for ident, event in self.events.items():
@@ -45,11 +56,19 @@ class CameraEvent(object):
             del self.events[remove]
 
     def clear(self):
-        """Invoked from each client's thread after a frame was processed."""
+        """
+        Invoked from each client's thread after a frame was processed.
+        
+        Returns:
+             None
+        """
         self.events[get_ident()][0].clear()
 
 
 class Camera():
+    """
+    A class to access the raspberry pi camera.
+    """
     thread = None  # background thread that reads frames from camera
     frame = None  # current frame is stored here by background thread
     last_access = 0  # time of last client access to the camera
