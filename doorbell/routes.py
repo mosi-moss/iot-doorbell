@@ -1,9 +1,15 @@
-from flask import render_template, url_for, request, redirect, flash, Response, send_file
+from flask import render_template, url_for, request, redirect, flash, Response, send_file, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
-from doorbell import app, db, FRAMERATE, RESOLUTION
-from doorbell.models import User
+from doorbell import app, db, push, FRAMERATE, RESOLUTION, BLINK_TIMES
+from doorbell.models import User, Subscription
 from doorbell.forms import LoginForm
 from doorbell.camera import Camera
+from doorbell.button import Doorbell
+from flask_pywebpush import WebPushException
+import json
+import time
+import requests
+import threading
 
 @app.route("/")
 
@@ -21,7 +27,7 @@ def home():
       return render_template("home.html", text = f"PiCamera at {RESOLUTION[0]}&#10799;{RESOLUTION[1]} / {FRAMERATE} FPS")
    else:
       return redirect(url_for("login"))
-   
+
 def gen(camera):
    """
    Create a generator to get frames from the camera.
@@ -80,3 +86,49 @@ def logout():
    """
    logout_user()
    return redirect(url_for("home"))
+
+@app.route("/api/subscribe", methods = ["GET", "POST"])
+def subscribe():
+   """
+   A route that subscribes a user to webpush notifications.
+   """
+   subscription_info = request.get_json("subscription_info")["subscription_json"]
+   # get the subscription if it already exists in the database
+   subscription = Subscription.query.filter(Subscription.subscription_info == subscription_info).first()
+   if not subscription:
+      # if the subscription does not exist, create a new subscription
+      subscription = Subscription()
+      subscription.subscription_info = subscription_info
+
+   db.session.add(subscription)
+   db.session.commit()
+
+   return jsonify(success=True)
+
+@app.route("/api/broadcast")
+def broadcast():
+   """
+   A route that sends a web push notification to all subscribers.
+   """
+   
+   notification = {
+      "title": "Ding Dong!",
+      "body": "There's someone at the door!",
+   }
+   # get all subscriptions
+   subscriptions = Subscription.query.all()
+   count = 0
+   # send a push notification to all subscribers
+   for subscription in subscriptions:
+      try:
+         push.send(json.loads(subscription.subscription_info), notification)
+         count += 1
+      except WebPushException as exc:
+         print(exc)
+   return jsonify(success = True, body = f"Successfully notified {count} subscriptions.")
+
+@app.route("/service_worker.js")
+def sw():
+   return send_file("static/service_worker.js")
+
+DoorbellObject = Doorbell()

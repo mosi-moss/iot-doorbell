@@ -129,3 +129,6 @@ dmypy.json
 
 # Ignore Generated Files
 *.db
+*.old
+
+*.swp
